@@ -1,0 +1,55 @@
+name: Flutter Build Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descargar el código del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Configurar Java (Necesario para Android)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3. Configurar Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      # 4. Instalar dependencias de Flutter
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Decodificar el Keystore (Se guarda en android/app/ para que Gradle lo encuentre)
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+
+      # 6. Compilar AppBundle pasando los Secretos como Variables de Entorno
+      - name: Build Release AppBundle
+        run: flutter build appbundle --release
+        env:
+          # Estas variables las leerá tu build.gradle mediante System.getenv()
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      # 7. Subir el archivo final (.aab) como un artefacto descargable
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-player-release-aab
+          path: build/app/outputs/bundle/release/app-release.aab
