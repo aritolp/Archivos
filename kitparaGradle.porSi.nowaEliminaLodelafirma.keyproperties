@@ -1,65 +1,36 @@
-¡Claro! Aquí tienes el "Kit de Emergencia". Si Nowa te borra todo, solo tienes que copiar y pegar estos dos bloques en tu archivo android/app/build.gradle.kts.
-He optimizado el código para que sea lo más compacto y fácil de insertar posible:
-Bloque 1: Al puro principio del archivo
-Pégalo encima de donde dice plugins { ... }. Este código busca y lee tus secretos.
+📄 Pieza 1: El Cerebro (android/app/build.gradle.kts)
+Este bloque es el que "conecta" tu código con las llaves secretas. Si Nowa te lo borra, pégalo de nuevo dentro del bloque android { ... }.
 
 
 
-
-He optimizado el código para que sea lo más compacto y fácil de insertar posible:
-Bloque 1: Al puro principio del archivo
-Pégalo encima de donde dice plugins { ... }. Este código busca y lee tus secretos.
-
-
-import java.util.Properties
-import java.io.FileInputStream
-
-// --- COPIAR DESDE AQUÍ ---
-val keystoreProperties = Properties()
+// 1. Esto va arriba de todo, fuera de 'android'
 val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = java.util.Properties()
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
 }
-// --- HASTA AQUÍ ---
 
-
-
-
-
-
-Bloque 2: Dentro de android { ... }
-Busca la sección signingConfigs y reemplázala por esta. Este bloque conecta los datos leídos arriba con el proceso de compilación.
-
-
-
+// 2. Esto va dentro de 'android'
+android {
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storePassword = keystoreProperties["storePassword"] as String?
-            // "app/$it" porque en Actions el JKS se genera dentro de android/app/
-            storeFile = keystoreProperties["storeFile"]?.let { file("app/$it") }
+            keyAlias = keystoreProperties["keyAlias"] as? String
+            keyPassword = keystoreProperties["keyPassword"] as? String
+            storePassword = keystoreProperties["storePassword"] as? String
+            val fileName = keystoreProperties["storeFile"] as? String
+            if (fileName != null) {
+                storeFile = file(fileName) // Busca en android/app/
+            }
         }
     }
 
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
-            // ... el resto de tus configs (minify, etc)
+            // ... resto de config (minify, etc)
         }
     }
+}
 
 
 
-¿Cómo saber si Nowa lo rompió?
-Si intentas compilar y ves errores como:
-
-    Could not find method signingConfigs()
-    Variable 'keystoreProperties' is undefined
-
-... es que Nowa hizo un "limpiar y resetear". Simplemente vuelve a pegar estos dos trozos y estarás listo en 10 segundos.
-Un truco final: Guarda estos dos bloques en un archivo de texto llamado gradle_fix.txt en tu escritorio. Así, cuando Nowa te dé la sorpresa, no tendrás ni que buscar esta conversación.
-
-
-
-    
