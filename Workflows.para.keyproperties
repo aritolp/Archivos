@@ -1,53 +1,39 @@
-3. .github/workflows/main.yml (El flujo de Actions)
-Este archivo automatiza la creación de la llave y el archivo de propiedades antes de compilar.
-
-
-
 name: Flutter Build APK
 
 on:
   push:
-    branches: [ main ] # Cambia a master si es tu rama principal
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0' # O la que uses en Nowa
-          channel: 'stable'
+          channel: 'stable' # Siempre lo más nuevo
+          cache: false
 
       - name: Decode Keystore
-        # Esto crea el archivo .jks a partir de tu secreto base64
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
 
       - name: Create key.properties
-        # Esto crea el archivo que el gradle leerá automáticamente
         run: |
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" > android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Build
+        run: |
+          flutter pub get
+          flutter build apk --release
 
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
