@@ -1,0 +1,9 @@
+El último paso crítico:
+Abre tu archivo .gitignore (en la raíz del proyecto) y asegúrate de tener estas dos líneas para que no se suban tus llaves reales por error:
+
+android/key.properties
+android/app/upload-keystore.jks
+
+
+
+
